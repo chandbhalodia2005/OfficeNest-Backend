@@ -1,0 +1,47 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+import joblib
+import os
+
+# --- 1. Simulate Historical Data ---
+# In a real-world scenario, you would load this from a database or CSV.
+# This DataFrame includes historical attendance scores and the actual bonus score awarded.
+data = {
+    'punctuality_score': [95, 80, 70, 90, 60, 85, 75, 92, 65, 88],
+    'late_score': [5, 20, 30, 10, 40, 15, 25, 8, 35, 12],
+    'absent_score': [2, 10, 15, 5, 25, 8, 12, 3, 20, 6],
+    'overtime_score': [80, 70, 60, 85, 50, 75, 65, 90, 55, 82],
+    # This is the target variable the model will learn to predict
+    'actual_bonus_score': [92.5, 75.0, 65.0, 88.0, 55.0, 80.0, 70.0, 91.5, 60.0, 85.5]
+}
+df = pd.DataFrame(data)
+
+# --- 2. Prepare Data for Training ---
+# Define the features (X) and the target variable (y).
+features = ['punctuality_score', 'late_score', 'absent_score', 'overtime_score']
+target = 'actual_bonus_score'
+
+X = df[features]
+y = df[target]
+
+# Split data into training and testing sets (optional but good practice)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# --- 3. Train the Model ---
+# We'll use a simple Linear Regression model for this example.
+# A more complex model like RandomForestRegressor could also be used.
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# --- 4. Evaluate the Model (Optional) ---
+# You would check the model's performance on the test set here.
+score = model.score(X_test, y_test)
+print(f"Model R-squared score: {score}")
+
+# --- 5. Save the Trained Model ---
+# The trained model is saved to a file for later use in the API.
+model_filename = 'bonus_prediction_model.joblib'
+joblib.dump(model, model_filename)
+
+print(f"Model saved as {model_filename}")
