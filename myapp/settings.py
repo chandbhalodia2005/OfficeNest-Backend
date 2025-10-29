@@ -1,31 +1,22 @@
-"""
-Django settings for OfficeNest project (deployment-ready).
-"""
-
-import os
 from pathlib import Path
-import dj_database_url
+import os
+import dj_database_url  # For PostgreSQL on Render
 
-# ----------------------------
-# PATHS
-# ----------------------------
+# ---------------------------------------------------------
+# BASE CONFIGURATION
+# ---------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ----------------------------
-# BASIC SETTINGS
-# ----------------------------
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'your-local-dev-secret')
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
+# SECURITY SETTINGS
+SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-secret-key")
+DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'officenest-backend.onrender.com',  # ← your Render backend URL
-]
+# Render automatically manages the host
+ALLOWED_HOSTS = ["*"]
 
-# ----------------------------
-# APPLICATIONS
-# ----------------------------
+# ---------------------------------------------------------
+# INSTALLED APPS
+# ---------------------------------------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -34,52 +25,36 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # Third-party apps
     'rest_framework',
     'corsheaders',
-
-    # Your apps
     'myapp',
 ]
 
-# ----------------------------
+# ---------------------------------------------------------
 # MIDDLEWARE
-# ----------------------------
+# ---------------------------------------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files
-    'corsheaders.middleware.CorsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ for static files on Render
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',       # must be before CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'OfficeNest.urls'  # ✅ Make sure this matches your project folder name
+# ---------------------------------------------------------
+# URLS / WSGI
+# ---------------------------------------------------------
+ROOT_URLCONF = 'myapp.urls'
+WSGI_APPLICATION = 'myapp.wsgi.application'
 
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'OfficeNest.wsgi.application'  # ✅ Matches your project folder
-
-# ----------------------------
-# DATABASE
-# ----------------------------
+# ---------------------------------------------------------
+# DATABASE CONFIGURATION
+# ---------------------------------------------------------
+# Uses PostgreSQL if Render provides DATABASE_URL, else SQLite locally
 DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
@@ -87,64 +62,57 @@ DATABASES = {
     )
 }
 
-# ----------------------------
-# REST FRAMEWORK
-# ----------------------------
+# ---------------------------------------------------------
+# REST FRAMEWORK SETTINGS
+# ---------------------------------------------------------
 REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
-    ),
+    'DEFAULT_RENDERER_CLASSES': ('rest_framework.renderers.JSONRenderer',),
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.MultiPartParser',
     ),
 }
 
-# ----------------------------
-# MEDIA FILES
-# ----------------------------
+# ---------------------------------------------------------
+# STATIC & MEDIA FILES
+# ---------------------------------------------------------
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Use WhiteNoise to serve static files efficiently
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# ----------------------------
-# STATIC FILES
-# ----------------------------
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# ---------------------------------------------------------
+# CORS CONFIGURATION
+# ---------------------------------------------------------
+CORS_ALLOW_ALL_ORIGINS = True
+# OR restrict only to your frontend (once deployed):
+# CORS_ALLOWED_ORIGINS = [
+#     "https://your-frontend.vercel.app",
+#     "https://your-frontend.onrender.com",
+# ]
 
-# WhiteNoise compression for static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# ----------------------------
-# CORS SETTINGS
-# ----------------------------
-CORS_ALLOWED_ORIGINS = [
-    "https://officenest.netlify.app",   # your Netlify frontend
-    "http://localhost:3000",            # local dev
-    "http://127.0.0.1:5173",            # Vite local dev
-]
-
-# If you want to temporarily allow all origins during testing:
-# CORS_ALLOW_ALL_ORIGINS = True
-
-# ----------------------------
-# SECURITY
-# ----------------------------
+# ---------------------------------------------------------
+# SECURITY HEADERS (Recommended)
+# ---------------------------------------------------------
 CSRF_TRUSTED_ORIGINS = [
-    "https://officenest.netlify.app",
-    "https://officenest-backend.onrender.com",
+    "https://*.onrender.com",
+    "https://*.vercel.app",
 ]
 
-# ----------------------------
+# ---------------------------------------------------------
 # INTERNATIONALIZATION
-# ----------------------------
+# ---------------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Kolkata'
 USE_I18N = True
 USE_TZ = True
 
-# ----------------------------
-# DEFAULT PRIMARY KEY FIELD
-# ----------------------------
+# ---------------------------------------------------------
+# DEFAULT AUTO FIELD
+# ---------------------------------------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
